@@ -1,159 +1,183 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ROXO VOICE</title>
-<style>
-*{box-sizing:border-box}
-body{
- margin:0;background:#10101c;color:white;
- font-family:Arial,sans-serif;text-align:center;
-}
-header{
- padding:25px;background:#19192b;
- font-size:27px;font-weight:bold;color:#b78cff;
-}
-main{padding:22px;max-width:500px;margin:auto}
-.card{
- background:#202037;border-radius:18px;
- padding:22px;margin:18px 0;
-}
-input{
- width:100%;padding:15px;border-radius:10px;
- border:1px solid #555;background:#111;
- color:white;font-size:16px;
-}
-button{
- border:0;border-radius:12px;padding:14px 20px;
- margin:7px;font-size:15px;font-weight:bold;
- background:#8b5cf6;color:white;
-}
-button:active{opacity:.7}
-.green{background:#16a36a}
-.red{background:#d94358}
-.gray{background:#41415a}
-#status{color:#a78bfa;margin:15px}
-#micStatus{font-size:14px;color:#bbb}
-footer{padding:20px;color:#888;font-size:12px}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROXO VOICE</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 25px 16px;
+      background: #101322;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    .container {
+      max-width: 430px;
+      margin: 30px auto;
+      padding: 25px 20px;
+      background: #20263b;
+      border-radius: 18px;
+      box-shadow: 0 8px 25px #0005;
+    }
+    h1 { color: #57d6ff; margin-bottom: 8px; }
+    p { color: #c6cce0; }
+    input {
+      width: 100%;
+      padding: 14px;
+      margin: 9px 0;
+      border: 1px solid #59617e;
+      border-radius: 10px;
+      background: #11182a;
+      color: white;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #16b9e8;
+      color: #071522;
+    }
+    button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+    .red { background: #ed5366; color: white; }
+    .yellow { background: #ffc94a; color: #222; }
+    #status {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #11182a;
+      color: #80e6a4;
+      line-height: 1.5;
+    }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h1>🎙️ ROXO VOICE</h1>
+    <p>Tempat berkumpul dan ngobrol</p>
 
-<header>🎙 ROXO VOICE</header>
+    <input id="username" placeholder="Masukkan nama kamu">
+    <input id="roomname" placeholder="Masukkan nama room">
 
-<main>
-<div class="card">
-<h2>Selamat Datang!</h2>
-<p>Temukan teman dan ngobrol bersama.</p>
-<input id="username" placeholder="Nama kamu">
-<br><br>
-<input id="room" placeholder="Nama room">
-<br><br>
-<button class="green" onclick="joinRoom()">
-MASUK ROOM
-</button>
-<button class="red" onclick="leaveRoom()">
-KELUAR ROOM
-</button>
-</div>
+    <button id="joinBtn" onclick="joinRoom()">MASUK ROOM</button>
+    <button class="red" id="leaveBtn" onclick="leaveRoom()" disabled>KELUAR ROOM</button>
 
-<div class="card">
-<h2>🎧 RUANG SUARA</h2>
-<p id="roomName">Belum masuk room</p>
-<div style="font-size:55px">🎤</div>
-<p id="status">Silakan masuk room</p>
-<button onclick="toggleMic()" id="micButton">
-🎙 AKTIFKAN MIC
-</button>
-<p id="micStatus">Mikrofon belum aktif</p>
-<button class="gray" onclick="raiseHand()">
-✋ ANGKAT TANGAN
-</button>
-<p id="handStatus"></p>
-</div>
-</main>
+    <div id="status">Belum masuk room</div>
 
-<footer>ROXO VOICE © 2026</footer>
+    <button id="micBtn" onclick="toggleMic()" disabled>
+      AKTIFKAN MIC
+    </button>
 
-<script>
-let micStream=null;
-let micOn=false;
-let joined=false;
+    <button class="yellow" id="handBtn" onclick="raiseHand()" disabled>
+      ✋ ANGKAT TANGAN
+    </button>
+  </div>
 
-function joinRoom(){
- const name=document.getElementById("username").value.trim();
- const room=document.getElementById("room").value.trim();
+  <script>
+    let inRoom = false;
+    let micStream = null;
+    let micOn = false;
+    let handRaised = false;
 
- if(!name || !room){
-  alert("Isi nama dan nama room dulu!");
-  return;
- }
+    const statusBox = document.getElementById("status");
+    const joinBtn = document.getElementById("joinBtn");
+    const leaveBtn = document.getElementById("leaveBtn");
+    const micBtn = document.getElementById("micBtn");
+    const handBtn = document.getElementById("handBtn");
 
- joined=true;
- document.getElementById("roomName").innerText=
- "Room: "+room+" | "+name;
- document.getElementById("status").innerText=
- "Kamu sudah masuk room!";
-}
+    function showStatus(message) {
+      statusBox.textContent = message;
+    }
 
-async function toggleMic(){
- if(!joined){
-  alert("Masuk room terlebih dahulu!");
-  return;
- }
+    function joinRoom() {
+      const username = document.getElementById("username").value.trim();
+      const roomname = document.getElementById("roomname").value.trim();
 
- if(!micOn){
-  try{
-   micStream=await navigator.mediaDevices.getUserMedia({
-    audio:true
-   });
-   micOn=true;
-   document.getElementById("micButton").innerText=
-   "🔇 MATIKAN MIC";
-   document.getElementById("micStatus").innerText=
-   "Mikrofon aktif di perangkat ini";
-  }catch(error){
-   alert("Mikrofon tidak dapat diakses. Periksa izin browser.");
-  }
- }else{
-  micStream.getTracks().forEach(track=>track.stop());
-  micStream=null;
-  micOn=false;
-  document.getElementById("micButton").innerText=
-  "🎙 AKTIFKAN MIC";
-  document.getElementById("micStatus").innerText=
-  "Mikrofon mati";
- }
-}
+      if (!username || !roomname) {
+        showStatus("Isi nama dan nama room terlebih dahulu!");
+        return;
+      }
 
-function raiseHand(){
- if(!joined){
-  alert("Masuk room terlebih dahulu!");
-  return;
- }
- document.getElementById("handStatus").innerText=
- "✋ Kamu mengangkat tangan!";
-}
+      inRoom = true;
+      joinBtn.disabled = true;
+      leaveBtn.disabled = false;
+      micBtn.disabled = false;
+      handBtn.disabled = false;
 
-function leaveRoom(){
- if(micStream){
-  micStream.getTracks().forEach(track=>track.stop());
- }
- micStream=null;
- micOn=false;
- joined=false;
- document.getElementById("roomName").innerText=
- "Belum masuk room";
- document.getElementById("status").innerText=
- "Kamu sudah keluar room";
- document.getElementById("micButton").innerText=
- "🎙 AKTIFKAN MIC";
- document.getElementById("micStatus").innerText=
- "Mikrofon belum aktif";
- document.getElementById("handStatus").innerText="";
-}
-</script>
+      showStatus("Berhasil masuk room: " + roomname +
+        "\nSelamat datang, " + username + "!");
+    }
+
+    async function toggleMic() {
+      if (!inRoom) return;
+
+      if (micOn) {
+        if (micStream) {
+          micStream.getTracks().forEach(track => track.stop());
+          micStream = null;
+        }
+        micOn = false;
+        micBtn.textContent = "AKTIFKAN MIC";
+        showStatus("Mikrofon dimatikan.");
+        return;
+      }
+
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: true
+        });
+        micOn = true;
+        micBtn.textContent = "MATIKAN MIC";
+        showStatus("Mikrofon aktif di perangkat ini.");
+      } catch (error) {
+        showStatus("Mikrofon tidak bisa diaktifkan. Periksa izin mikrofon browser.");
+      }
+    }
+
+    function raiseHand() {
+      if (!inRoom) return;
+
+      handRaised = !handRaised;
+      handBtn.textContent = handRaised
+        ? "✋ TURUNKAN TANGAN"
+        : "✋ ANGKAT TANGAN";
+
+      showStatus(handRaised
+        ? "Kamu sedang mengangkat tangan."
+        : "Tangan sudah diturunkan.");
+    }
+
+    function leaveRoom() {
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+      }
+
+      inRoom = false;
+      micOn = false;
+      handRaised = false;
+
+      joinBtn.disabled = false;
+      leaveBtn.disabled = true;
+      micBtn.disabled = true;
+      handBtn.disabled = true;
+
+      micBtn.textContent = "AKTIFKAN MIC";
+      handBtn.textContent = "✋ ANGKAT TANGAN";
+
+      showStatus("Kamu sudah keluar dari room.");
+    }
+  </script>
 </body>
 </html>
